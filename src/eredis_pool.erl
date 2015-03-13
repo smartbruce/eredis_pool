@@ -40,27 +40,30 @@ stop() ->
              {ok, pid()} | {error,{already_started, pid()}}).
 
 create_pool(PoolName, Size) ->
-    eredis_pool_sup:create_pool(PoolName, Size, []).
+    eredis_pool_sup:create_pool(PoolName, Size, 10, []).
 
 -spec(create_pool(PoolName::atom(), Size::integer(), Host::string()) -> 
              {ok, pid()} | {error,{already_started, pid()}}).
 
 create_pool(PoolName, Size, Host) ->
-    eredis_pool_sup:create_pool(PoolName, Size, [{host, Host}]).
+    eredis_pool_sup:create_pool(PoolName, Size, 10, [{host, Host}]).
 
--spec(create_pool(PoolName::atom(), Size::integer(), 
+-spec(create_pool(PoolName::atom(), Size::tuple() | integer(),
                   Host::string(), Port::integer()) -> 
              {ok, pid()} | {error,{already_started, pid()}}).
 
+create_pool(PoolName, {Size, MaxOverflow}, Host, Port) ->
+    eredis_pool_sup:create_pool(PoolName, Size, MaxOverflow, [{host, Host}, {port, Port}]);
+
 create_pool(PoolName, Size, Host, Port) ->
-    eredis_pool_sup:create_pool(PoolName, Size, [{host, Host}, {port, Port}]).
+    eredis_pool_sup:create_pool(PoolName, Size, 10, [{host, Host}, {port, Port}]).
 
 -spec(create_pool(PoolName::atom(), Size::integer(), 
                   Host::string(), Port::integer(), Database::string()) -> 
              {ok, pid()} | {error,{already_started, pid()}}).
 
 create_pool(PoolName, Size, Host, Port, Database) ->
-    eredis_pool_sup:create_pool(PoolName, Size, [{host, Host}, {port, Port},
+    eredis_pool_sup:create_pool(PoolName, Size, 10, [{host, Host}, {port, Port},
                                                  {database, Database}]).
 
 -spec(create_pool(PoolName::atom(), Size::integer(), 
@@ -69,7 +72,7 @@ create_pool(PoolName, Size, Host, Port, Database) ->
              {ok, pid()} | {error,{already_started, pid()}}).
 
 create_pool(PoolName, Size, Host, Port, Database, Password) ->
-    eredis_pool_sup:create_pool(PoolName, Size, [{host, Host}, {port, Port},
+    eredis_pool_sup:create_pool(PoolName, Size, 10, [{host, Host}, {port, Port},
                                                  {database, Database},
                                                  {password, Password}]).
 
@@ -80,7 +83,7 @@ create_pool(PoolName, Size, Host, Port, Database, Password) ->
              {ok, pid()} | {error,{already_started, pid()}}).
 
 create_pool(PoolName, Size, Host, Port, Database, Password, ReconnectSleep) ->
-    eredis_pool_sup:create_pool(PoolName, Size, [{host, Host}, {port, Port},
+    eredis_pool_sup:create_pool(PoolName, Size, 10, [{host, Host}, {port, Port},
                                                  {database, Database},
                                                  {password, Password},
                                                  {reconnect_sleep, ReconnectSleep}]).

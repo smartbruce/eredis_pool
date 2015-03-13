@@ -7,7 +7,7 @@
 
 %% API
 -export([start_link/0, start_link/2]).
--export([create_pool/3, delete_pool/1]).
+-export([create_pool/4, delete_pool/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -31,24 +31,24 @@ start_link(Pools, GlobalOrLocal) ->
 %% @doc create new pool.
 %% @end
 %% ===================================================================
--spec(create_pool(PoolName::atom(), Size::integer(), Options::[tuple()]) ->
+-spec(create_pool(PoolName::atom(), Size::integer(), MaxOverflow::integer(), Options::[tuple()]) ->
              {ok, pid()} | {error,{already_started, pid()}}).
 
-create_pool(PoolName, Size, Options) ->
-    create_pool(local, PoolName, Size, Options).
+create_pool(PoolName, Size, MaxOverflow, Options) ->
+    create_pool(local, PoolName, Size, MaxOverflow, Options).
 
 %% ===================================================================
 %% @doc create new pool, selectable name zone global or local.
 %% @end
 %% ===================================================================
--spec(create_pool(GlobalOrLocal::atom(), PoolName::atom(), Size::integer(), Options::[tuple()]) ->
+-spec(create_pool(GlobalOrLocal::atom(), PoolName::atom(), Size::integer(), MaxOverflow::integer(), Options::[tuple()]) ->
              {ok, pid()} | {error,{already_started, pid()}}).
 
-create_pool(GlobalOrLocal, PoolName, Size, Options) 
+create_pool(GlobalOrLocal, PoolName, Size, MaxOverflow, Options)
   when GlobalOrLocal =:= local;
        GlobalOrLocal =:= global ->
 
-    SizeArgs = [{size, Size}, {max_overflow, 10}],
+    SizeArgs = [{size, Size}, {max_overflow, MaxOverflow}],
     PoolArgs = [{name, {GlobalOrLocal, PoolName}}, {worker_module, eredis}],
     PoolSpec = poolboy:child_spec(PoolName, PoolArgs ++ SizeArgs, Options),
 
