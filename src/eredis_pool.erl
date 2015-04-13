@@ -17,7 +17,7 @@
 
 %% API
 -export([start/0, stop/0]).
--export([q/2, q/3, qp/2, qp/3, transaction/2,
+-export([q/2, q/3, q_async/2, qp/2, qp/3, transaction/2, transaction_async/2,
          create_pool/2, create_pool/3, create_pool/4, create_pool/5,
          create_pool/6, create_pool/7, 
          delete_pool/1]).
@@ -120,6 +120,13 @@ q(PoolName, Command, Timeout) ->
                                           eredis:q(Worker, Command, Timeout)
                                   end).
 
+-spec q_async(PoolName::atom(), Command::iolist()) ->
+  ok.
+q_async(PoolName, Command) ->
+  poolboy:transaction(PoolName, fun(Worker) ->
+    eredis:q_noreply(Worker, Command)
+  end).
+
 -spec qp(PoolName::atom(), Command::iolist(), Timeout::integer()) ->
                {ok, binary() | [binary()]} | {error, Reason::binary()}.
 
@@ -146,4 +153,20 @@ transaction(PoolName, Fun) when is_function(Fun) ->
                 end
         end,
 
-    poolboy:transaction(PoolName, F).    
+    poolboy:transaction(PoolName, F).
+
+transaction_async(PoolName, Fun) when is_function(Fun) ->
+  F = fun(C) ->
+    try
+      ok = eredis:q_noreply(C, ["MULTI"]),
+      Fun(C),
+      eredis:q_noreply(C, ["EXEC"])
+    catch Klass:Reason ->
+      ok = eredis:q_noreply(C, ["DISCARD"]),
+      io:format("Error in redis transaction. ~p:~p",
+        [Klass, Reason]),
+      {Klass, Reason}
+    end
+  end,
+
+  poolboy:transaction(PoolName, F).
