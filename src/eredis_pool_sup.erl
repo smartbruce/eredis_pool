@@ -49,7 +49,7 @@ create_pool(GlobalOrLocal, PoolName, Size, MaxOverflow, Options)
        GlobalOrLocal =:= global ->
 
     SizeArgs = [{size, Size}, {max_overflow, MaxOverflow}],
-    PoolArgs = [{name, {GlobalOrLocal, PoolName}}, {worker_module, eredis}],
+    PoolArgs = [{name, {GlobalOrLocal, PoolName}}, {worker_module, eredis_proxy}],
     PoolSpec = poolboy:child_spec(PoolName, PoolArgs ++ SizeArgs, Options),
 
     supervisor:start_child(?MODULE, PoolSpec).
@@ -77,7 +77,7 @@ init([Pools, GlobalOrLocal]) ->
 
     PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
         PoolArgs = [{name, {GlobalOrLocal, Name}},
-                    {worker_module, eredis}] ++ SizeArgs,
+                    {worker_module, eredis_proxy}] ++ SizeArgs,
         poolboy:child_spec(Name, PoolArgs, WorkerArgs)
     end, Pools),
 

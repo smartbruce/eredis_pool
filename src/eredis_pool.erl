@@ -117,14 +117,24 @@ q(PoolName, Command) ->
 
 q(PoolName, Command, Timeout) ->
     poolboy:transaction(PoolName, fun(Worker) ->
-                                          eredis:q(Worker, Command, Timeout)
-                                  end).
+        case gen_server:call(Worker, connect) of
+            {ok, Pid} ->
+                eredis:q(Pid, Command, Timeout);
+            Error ->
+                Error
+        end
+    end).
 
 -spec q_async(PoolName::atom(), Command::iolist()) ->
   ok.
 q_async(PoolName, Command) ->
   poolboy:transaction(PoolName, fun(Worker) ->
-    eredis:q_noreply(Worker, Command)
+      case gen_server:call(Worker, connect) of
+          {ok, Pid} ->
+              eredis:q_noreply(Pid, Command);
+          Error ->
+              Error
+      end
   end).
 
 -spec qp(PoolName::atom(), Command::iolist(), Timeout::integer()) ->
@@ -135,38 +145,53 @@ qp(PoolName, Pipeline) ->
 
 qp(PoolName, Pipeline, Timeout) ->
     poolboy:transaction(PoolName, fun(Worker) ->
-   		eredis:qp(Worker, Pipeline, Timeout)
+        case gen_server:call(Worker, connect) of
+            {ok, Pid} ->
+                eredis:qp(Pid, Pipeline, Timeout);
+            Error ->
+                Error
+        end
     end).
 
 
 transaction(PoolName, Fun) when is_function(Fun) ->
     F = fun(C) ->
+        case gen_server:call(C, connect) of
+            {ok, Pid} ->
                 try
-                    {ok, <<"OK">>} = eredis:q(C, ["MULTI"]),
-                    Fun(C),
-                    eredis:q(C, ["EXEC"])
+                    {ok, <<"OK">>} = eredis:q(Pid, ["MULTI"]),
+                    Fun(Pid),
+                    eredis:q(Pid, ["EXEC"])
                 catch Klass:Reason ->
-                        {ok, <<"OK">>} = eredis:q(C, ["DISCARD"]),
-                        io:format("Error in redis transaction. ~p:~p", 
-                                  [Klass, Reason]),
-                        {Klass, Reason}
-                end
-        end,
+                    {ok, <<"OK">>} = eredis:q(Pid, ["DISCARD"]),
+                    io:format("Error in redis transaction. ~p:~p",
+                        [Klass, Reason]),
+                    {Klass, Reason}
+                end;
+            Error ->
+                Error
+        end
+    end,
 
     poolboy:transaction(PoolName, F).
 
 transaction_async(PoolName, Fun) when is_function(Fun) ->
   F = fun(C) ->
-    try
-      ok = eredis:q_noreply(C, ["MULTI"]),
-      Fun(C),
-      eredis:q_noreply(C, ["EXEC"])
-    catch Klass:Reason ->
-      ok = eredis:q_noreply(C, ["DISCARD"]),
-      io:format("Error in redis transaction. ~p:~p",
-        [Klass, Reason]),
-      {Klass, Reason}
-    end
+      case gen_server:call(C, connect) of
+          {ok, Pid} ->
+              try
+                  ok = eredis:q_noreply(Pid, ["MULTI"]),
+                  Fun(Pid),
+                  eredis:q_noreply(Pid, ["EXEC"])
+              catch Klass:Reason ->
+                  ok = eredis:q_noreply(Pid, ["DISCARD"]),
+                  io:format("Error in redis transaction. ~p:~p",
+                      [Klass, Reason]),
+                  {Klass, Reason}
+              end;
+          Error ->
+              Error
+      end
   end,
 
   poolboy:transaction(PoolName, F).
