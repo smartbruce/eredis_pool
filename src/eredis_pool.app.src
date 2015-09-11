@@ -8,7 +8,7 @@
                   stdlib
                  ]},
   {mod, { eredis_pool_app, []}},
-  {env, []}
+  {env, [{pools, []}, {global_or_local, local}]}
 
 %% sample configuration.
 %%
