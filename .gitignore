@@ -7,3 +7,5 @@ db
 deps
 .DS_Store
 eunit.coverage.xml
+*.iml
+.idea/
